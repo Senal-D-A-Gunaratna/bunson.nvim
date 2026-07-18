@@ -1,0 +1,8 @@
+-- bunson.nvim plugin bootstrap
+--
+-- This file exists so lazy.nvim recognizes bunson.nvim as a plugin that can be
+-- lazy-loaded. bunson.nvim does NOT auto-call setup() from this file; users
+-- must call require("bunson").setup() explicitly in their lazy.nvim config
+-- (or via a plugin spec's `config` key) to ensure mason.nvim is loaded first.
+--
+-- Refer to README.md for installation and usage instructions.

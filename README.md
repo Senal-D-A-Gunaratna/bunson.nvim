@@ -1,5 +1,7 @@
 # bunson.nvim
 
+> **⚠ WARNING: This plugin is in early testing. Do not use it in a production environment.**
+
 A companion plugin for [mason.nvim](https://github.com/mason-org/mason.nvim) that
 routes npm package installs through **bun** instead of **npm**.
 

@@ -160,6 +160,7 @@ function M.setup(opts)
 
             local fetch = require "mason-core.fetch"
             local _ = require "mason-core.functional"
+            local semver = require "mason-core.semver"
 
             -- Original: spawns `npm view --json <pkg>@latest`
             -- Replacement: GET https://registry.npmjs.org/<pkg>/latest
@@ -173,7 +174,14 @@ function M.setup(opts)
 
             -- Original: spawns `npm view --json <pkg> versions`
             -- Replacement: GET https://registry.npmjs.org/<pkg>
-            -- then extract and reverse the keys of the `versions` object.
+            -- then extract version keys and sort descending by semver.
+            --
+            -- The raw registry JSON's `versions` object has no guaranteed key
+            -- order, so we must sort explicitly. Unlike the old `npm view`
+            -- approach (which returned an array npm had already sorted), we
+            -- use mason-core.semver's comparator for correct numerical major/
+            -- minor/patch ordering, not lexicographic string comparison which
+            -- would put 10.0.0 before 2.0.0.
             npm_client.get_all_versions = function(pkg)
                 return fetch("https://registry.npmjs.org/" .. pkg)
                     :map_catching(vim.json.decode)
@@ -182,11 +190,19 @@ function M.setup(opts)
                         for v, _ in pairs(data.versions) do
                             table.insert(versions, v)
                         end
-                        table.sort(versions)
-                        for i = 1, math.floor(#versions / 2) do
-                            local j = #versions - i + 1
-                            versions[i], versions[j] = versions[j], versions[i]
-                        end
+                        table.sort(versions, function(a, b)
+                            local ok_a, sem_a = pcall(semver.new, a)
+                            local ok_b, sem_b = pcall(semver.new, b)
+                            if ok_a and ok_b then
+                                return sem_b < sem_a
+                            end
+                            log.fmt_debug(
+                                "bunson: failed to parse semver for %q or %q, falling back to string comparison",
+                                a,
+                                b
+                            )
+                            return a > b
+                        end)
                         return versions
                     end)
             end

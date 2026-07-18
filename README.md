@@ -1,7 +1,7 @@
 # bunson.nvim
 
 A companion plugin for [mason.nvim](https://github.com/mason-org/mason.nvim) that
-routes npm package installs through **bun** instead of **npm`.
+routes npm package installs through **bun** instead of **npm**.
 
 ## Why?
 
@@ -39,7 +39,7 @@ modified.
 
 ```lua
 {
-    "senaldo/bunson.nvim",
+    "Senal-D-A-Gunaratna/bunson.nvim",
     dependencies = {
         "mason-org/mason.nvim",
     },

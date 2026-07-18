@@ -186,23 +186,24 @@ function M.setup(opts)
                 return fetch("https://registry.npmjs.org/" .. pkg)
                     :map_catching(vim.json.decode)
                     :map(function(data)
-                        local versions = {}
+                        local entries = {}
                         for v, _ in pairs(data.versions) do
-                            table.insert(versions, v)
-                        end
-                        table.sort(versions, function(a, b)
-                            local ok_a, sem_a = pcall(semver.new, a)
-                            local ok_b, sem_b = pcall(semver.new, b)
-                            if ok_a and ok_b then
-                                return sem_b < sem_a
+                            local ok, sem = pcall(semver.new, v)
+                            if not ok then
+                                log.fmt_debug("bunson: failed to parse semver for %q", v)
                             end
-                            log.fmt_debug(
-                                "bunson: failed to parse semver for %q or %q, falling back to string comparison",
-                                a,
-                                b
-                            )
-                            return a > b
+                            table.insert(entries, { str = v, sem = ok and sem or nil })
+                        end
+                        table.sort(entries, function(a, b)
+                            if a.sem and b.sem then
+                                return b.sem < a.sem
+                            end
+                            return a.str > b.str
                         end)
+                        local versions = {}
+                        for i, entry in ipairs(entries) do
+                            versions[i] = entry.str
+                        end
                         return versions
                     end)
             end

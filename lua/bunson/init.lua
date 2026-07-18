@@ -5,6 +5,9 @@ local defaults = {
     bun_cmd = "bun",
 }
 
+--- Invariant: state.patched is true iff M._originals is non-nil.
+--- Both must be set/cleared together so no code path can update one
+--- without the other.
 local state = {
     patched = false,
 }
@@ -34,6 +37,7 @@ function M.restore()
         end
     end
 
+    M._originals = nil
     state.patched = false
 end
 
@@ -55,7 +59,9 @@ function M.setup(opts)
         return
     end
 
-    if state.patched then
+    -- Guard with both state flags so a future edit that clears one without
+    -- the other can't silently double-patch or never-patch.
+    if state.patched and M._originals then
         return
     end
 
@@ -140,31 +146,49 @@ function M.setup(opts)
     -- Same lazy-load caveat as the manager module: mason.providers.client.npm
     -- is only required on demand during a version lookup, so we
     -- require() it directly rather than checking package.loaded.
+    --
+    -- Instead of shelling out to `bun x npm view` (which would silently pull
+    -- in the real npm package via bunx, defeating the point of a no-npm
+    -- installer), we query the npm registry API directly with an HTTP GET
+    -- via mason-core's built-in fetch utility. This avoids requiring any
+    -- package manager binary for read-only metadata lookups.
     if opts.patch_version_lookup then
         local ok_client, npm_client = pcall(require, "mason.providers.client.npm")
         if ok_client and type(npm_client) == "table" then
             M._originals.get_latest_version = npm_client.get_latest_version
             M._originals.get_all_versions = npm_client.get_all_versions
 
-            local spawn = require "mason-core.spawn"
+            local fetch = require "mason-core.fetch"
             local _ = require "mason-core.functional"
 
             -- Original: spawns `npm view --json <pkg>@latest`
-            -- Bun variant: spawns `bun x npm view --json <pkg>@latest`
-            -- Uses bun's package runner (bunx) to proxy the npm registry metadata call.
-            -- This avoids requiring npm on PATH; bun's package runner downloads packages on demand.
+            -- Replacement: GET https://registry.npmjs.org/<pkg>/latest
+            -- The npm registry's /latest endpoint returns the same
+            -- {name, version, ...} shape as `npm view --json pkg@latest`.
             npm_client.get_latest_version = function(pkg)
-                return spawn[opts.bun_cmd] { "x", "npm", "view", "--json", pkg .. "@latest" }
-                    :map(_.prop "stdout")
+                return fetch("https://registry.npmjs.org/" .. pkg .. "/latest")
                     :map_catching(vim.json.decode)
                     :map(_.pick { "name", "version" })
             end
 
+            -- Original: spawns `npm view --json <pkg> versions`
+            -- Replacement: GET https://registry.npmjs.org/<pkg>
+            -- then extract and reverse the keys of the `versions` object.
             npm_client.get_all_versions = function(pkg)
-                return spawn[opts.bun_cmd] { "x", "npm", "view", "--json", pkg, "versions" }
-                    :map(_.prop "stdout")
+                return fetch("https://registry.npmjs.org/" .. pkg)
                     :map_catching(vim.json.decode)
-                    :map(_.reverse)
+                    :map(function(data)
+                        local versions = {}
+                        for v, _ in pairs(data.versions) do
+                            table.insert(versions, v)
+                        end
+                        table.sort(versions)
+                        for i = 1, math.floor(#versions / 2) do
+                            local j = #versions - i + 1
+                            versions[i], versions[j] = versions[j], versions[i]
+                        end
+                        return versions
+                    end)
             end
         else
             vim.notify(

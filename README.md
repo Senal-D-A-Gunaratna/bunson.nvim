@@ -2,6 +2,8 @@
 
 ## Status
 
+**⚠️ This plugin is currently in beta.**
+
 Tested end-to-end (install + LSP attach + cold-start survival) with
 [cspell-lsp](https://github.com/streetsidesoftware/cspell) (LSP server) and
 [prettier](https://github.com/prettier/prettier) (formatter with native platform

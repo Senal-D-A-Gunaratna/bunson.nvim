@@ -72,9 +72,9 @@ required since bunson.nvim patches mason.nvim's already-loaded modules.
 ```lua
 require("bunson").setup({
     -- Whether to also patch mason's npm version-lookup client
-    -- (npm view --json) to use bun's package runner instead.
-    -- Default: false (npm view works fine alongside bun-based installs).
-    patch_version_lookup = false,
+    -- (npm view --json) — needed on systems with NO npm installed at all,
+    -- since version lookups would otherwise still shell out to npm.
+    patch_version_lookup = false, -- set true for non-npm systems
 
     -- The bun binary name/path. Change if bun is installed under a
     -- different name or at a custom path.

@@ -237,10 +237,25 @@ function M.setup(opts)
                     if ok then
                         ok:write(("#!/bin/sh\nexec %q \"$@\"\n"):format(bun_path))
                         ok:close()
-                        vim.fn.setfperm(node_shim, "755")
-                        log.fmt_debug("bunson: created node shim at %s -> %s", node_shim, bun_path)
+                        vim.fn.setfperm(node_shim, "rwxr-xr-x")
+                        if vim.fn.executable(node_shim) == 1 then
+                            log.fmt_debug("bunson: created node shim at %s -> %s", node_shim, bun_path)
+                        else
+                            log.warn(
+                                ("bunson: wrote node shim to %s but it is not executable after chmod. "
+                                    .. "LSPs relying on #!/usr/bin/env node will fail with exit 127."):format(
+                                    node_shim
+                                )
+                            )
+                        end
                     else
-                        log.fmt_debug("bunson: failed to create node shim at %s: %s", node_shim, err)
+                        log.warn(
+                            ("bunson: failed to create node shim at %s: %s. "
+                                .. "LSPs relying on #!/usr/bin/env node will fail with exit 127."):format(
+                                node_shim,
+                                err
+                            )
+                        )
                     end
                 end
             end

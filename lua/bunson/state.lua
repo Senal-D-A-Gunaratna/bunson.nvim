@@ -40,6 +40,8 @@ function M.restore()
         require("bunson.version_lookup").revert(npm_client, originals.version_lookup)
     end
 
+    require("bunson.node_shim").remove()
+
     M.clear_originals()
 end
 

@@ -67,4 +67,13 @@ if vim.fn.executable("node") == 0 then
     assert(vim.fn.executable(node_shim) == 1,
         "bunson should create " .. node_shim .. " when node is not on PATH")
 end
+
+-- After require("bunson").restore():
+-- (simulate by calling it right after setup above)
+if vim.fn.executable("node") == 0 then
+    local mason_settings = require("mason.settings")
+    local node_shim = mason_settings.current.install_root_dir .. "/bin/node"
+    assert(vim.fn.filereadable(node_shim) == 0,
+        "bunson should remove " .. node_shim .. " on restore()")
+end
 ```

@@ -1,5 +1,7 @@
 local M = {}
 
+local SHIM_MARKER = "# bunson.nvim node shim"
+
 ---@param opts { bun_cmd: string }
 function M.ensure(opts)
     local log = require "mason-core.log"
@@ -23,7 +25,7 @@ function M.ensure(opts)
                     vim.fn.mkdir(mason_bin, "p")
                     local ok, err = io.open(node_shim, "w")
                     if ok then
-                        ok:write(("#!/bin/sh\nexec %q \"$@\"\n"):format(bun_path))
+                        ok:write(("#!/bin/sh\n%s\nexec %q \"$@\"\n"):format(SHIM_MARKER, bun_path))
                         ok:close()
                         vim.fn.setfperm(node_shim, "rwxr-xr-x")
                         if vim.fn.executable(node_shim) == 1 then
@@ -48,6 +50,35 @@ function M.ensure(opts)
                 end
             end
         end
+    end
+end
+
+--- Remove the node shim if it was created by bunson (contains the marker).
+--- Best-effort and non-fatal: failures are logged, not raised.
+function M.remove()
+    local log = require "mason-core.log"
+    local ok_settings, mason_settings = pcall(require, "mason.settings")
+    if not ok_settings then
+        return
+    end
+    local node_shim = mason_settings.current.install_root_dir .. "/bin/node"
+    if vim.fn.filereadable(node_shim) == 0 then
+        return
+    end
+    local ok_open, f = pcall(io.open, node_shim, "r")
+    if not ok_open or not f then
+        return
+    end
+    local content = f:read "*a"
+    f:close()
+    if not content:find(SHIM_MARKER, 1, true) then
+        return
+    end
+    local ok_del, err = pcall(os.remove, node_shim)
+    if ok_del then
+        log.fmt_debug("bunson: removed node shim at %s", node_shim)
+    else
+        log.warn(("bunson: failed to remove node shim at %s: %s"):format(node_shim, err))
     end
 end
 

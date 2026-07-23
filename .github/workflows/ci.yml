@@ -11,8 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install lua and luarocks
+        run: sudo apt-get update && sudo apt-get install -y lua5.1 luarocks
       - name: Install luacheck
-        run: sudo apt-get update && sudo apt-get install -y luacheck
+        run: sudo luarocks install luacheck
       - name: Run luacheck
         run: luacheck lua/ plugin/
 
@@ -27,9 +29,14 @@ jobs:
           cd /tmp/neovim-stubs && git sparse-checkout set runtime/lua
           mkdir -p .neovim-stubs/runtime
           cp -r /tmp/neovim-stubs/runtime/lua .neovim-stubs/runtime/
-      - uses: yewton/action-setup-lua-language-server@v1
-        with:
-          version: "3.13.1"
+      - name: Install lua-language-server
+        run: |
+          curl -fsSL --retry 3 \
+            "https://github.com/LuaLS/lua-language-server/releases/download/3.13.1/lua-language-server-3.13.1-linux-x64.tar.gz" \
+            -o /tmp/luals.tar.gz
+          mkdir -p /tmp/luals
+          tar xzf /tmp/luals.tar.gz -C /tmp/luals
+          echo "/tmp/luals/bin" >> $GITHUB_PATH
       - name: Run lua-language-server
         run: |
           lua-language-server --check=lua/ --configpath=.luarc.json \

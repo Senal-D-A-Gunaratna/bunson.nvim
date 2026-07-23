@@ -2,9 +2,9 @@ local M = {}
 
 ---@async
 ---@param npm_client table
----@param opts { bun_cmd: string }
+---@param _opts { bun_cmd: string }
 ---@return { get_latest_version: fun(...), get_all_versions: fun(...) }
-function M.apply(npm_client, opts)
+function M.apply(npm_client, _opts)
     local fetch = require "mason-core.fetch"
     local _ = require "mason-core.functional"
     local log = require "mason-core.log"

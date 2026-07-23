@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install luacheck
+        run: sudo apt-get update && sudo apt-get install -y luacheck
+      - name: Run luacheck
+        run: luacheck lua/ plugin/
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Neovim API stubs
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse \
+            https://github.com/neovim/neovim /tmp/neovim-stubs
+          cd /tmp/neovim-stubs && git sparse-checkout set runtime/lua
+          mkdir -p .neovim-stubs/runtime
+          cp -r /tmp/neovim-stubs/runtime/lua .neovim-stubs/runtime/
+      - uses: yewton/action-setup-lua-language-server@v1
+        with:
+          version: "3.13.1"
+      - name: Run lua-language-server
+        run: |
+          lua-language-server --check=lua/ --configpath=.luarc.json \
+            --check_output_path=/tmp/luals-check
+          if [ ! -f /tmp/luals-check/check.json ]; then
+            echo "ERROR: lua-language-server did not produce check output"
+            exit 1
+          fi
+          cat /tmp/luals-check/check.json
+          if jq -e '.diagnostics[] | select(.severity == 1)' /tmp/luals-check/check.json > /dev/null; then
+            echo "ERROR: Type errors found"
+            exit 1
+          fi

@@ -14,7 +14,12 @@ function M.check()
         return
     end
 
-    local bun_cmd = "bun"
+    local state = require "bunson.state"
+    local configured_opts = state.get_opts()
+    local bun_cmd = (configured_opts or {}).bun_cmd or "bun"
+    if not configured_opts then
+        vim.health.info "setup() has not been called yet — using default bun_cmd='bun', not user config"
+    end
     local bun_path = vim.fn.exepath(bun_cmd)
     if bun_path and bun_path ~= "" then
         vim.health.ok(("bun found at %s"):format(bun_path))
@@ -51,7 +56,6 @@ function M.check()
         end
     end
 
-    local state = require "bunson.state"
     if state.is_patched() then
         vim.health.ok "mason's npm manager is currently patched to use bun"
     else

@@ -2,6 +2,7 @@ local M = {}
 
 local originals = {}
 local patched = false
+local opts = nil
 
 function M.is_patched()
     return patched
@@ -27,6 +28,16 @@ end
 function M.clear_originals()
     originals = {}
     patched = false
+end
+
+---@param new_opts table
+function M.set_opts(new_opts)
+    opts = new_opts
+end
+
+---@return table|nil
+function M.get_opts()
+    return opts
 end
 
 function M.mark_patched()

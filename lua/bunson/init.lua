@@ -13,6 +13,7 @@ end
 ---@param opts? { patch_version_lookup?: boolean, bun_cmd?: string }
 function M.setup(opts)
     opts = vim.tbl_deep_extend("keep", opts or {}, defaults)
+    require("bunson.state").set_opts(opts)
 
     -- Check that the top-level mason module is loaded (it is placed into
     -- package.loaded as soon as require("mason").setup() runs, unlike the

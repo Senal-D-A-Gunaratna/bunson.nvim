@@ -19,6 +19,11 @@ function M.get_originals(category)
     return originals[category]
 end
 
+---@param category string
+function M.has_originals(category)
+    return originals[category] ~= nil
+end
+
 function M.clear_originals()
     originals = {}
     patched = false

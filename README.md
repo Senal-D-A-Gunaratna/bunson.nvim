@@ -84,6 +84,19 @@ require("bunson").setup({
 })
 ```
 
+## Health check
+
+Run `:checkhealth bunson` to diagnose your bunson.nvim setup:
+
+- Checks that mason.nvim is installed and loadable
+- Verifies the `bun` binary is on `$PATH`
+- Reports whether a real `node` is available or a bun-based node shim will be created
+- Inspects the node shim file for correct permissions
+- Reports whether the mason npm manager is currently patched
+- Shows whether `patch_version_lookup` is active (registry API vs. shelling out to npm)
+
+The health check is **read-only**: it never creates, modifies, or removes files.
+
 ## Reverting
 
 Call `require("bunson").restore()` to restore mason.nvim's original npm
